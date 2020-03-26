@@ -11,6 +11,8 @@ import logoImg from "../../assets/logo.png";
 export default function Incidents() {
   let [incidents, setIncidents] = useState([]);
   let [total, setTotal] = useState(0);
+  let [page, setPage] = useState(1);
+  let [loading, setLoading] = useState(false);
 
   const navigation = useNavigation();
 
@@ -19,10 +21,20 @@ export default function Incidents() {
   }
 
   async function loadIncidents() {
-    const res = await api.get("/incidents");
+    if (loading) return;
 
-    setIncidents(res.data);
+    if (total > 0 && incidents.length === total) return;
+
+    setLoading(true);
+
+    const res = await api.get("/incidents", {
+      params: { page }
+    });
+
+    setIncidents([...incidents, ...res.data]);
     setTotal(res.headers["x-total-count"]);
+    setPage(page + 1);
+    setLoading(false);
   }
 
   useEffect(() => {
@@ -38,7 +50,7 @@ export default function Incidents() {
         </Text>
       </View>
 
-      <Text style={styles.title}>Bem-vinda!</Text>
+      <Text style={styles.title}>Bem-vinde!</Text>
       <Text style={styles.description}>
         Escolha um dos casos abaixo e salve o dia!
       </Text>
@@ -48,6 +60,8 @@ export default function Incidents() {
         style={styles.incidentList}
         keyExtractor={incident => incident.id}
         showsVerticalScrollIndicator={false}
+        onEndReached={loadIncidents}
+        onEndReachedThreshold={0.25}
         renderItem={({ item: incident }) => (
           <View style={styles.incident}>
             <Text style={styles.incidentProperty}> ONG: </Text>
